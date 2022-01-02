@@ -1,7 +1,7 @@
 import {Entity, model, property} from '@loopback/repository';
 
 @model()
-export class Set extends Entity {
+export class Users extends Entity {
   @property({
     type: 'number',
     id: true,
@@ -11,51 +11,40 @@ export class Set extends Entity {
 
   @property({
     type: 'string',
+  })
+  email?: string;
+
+  @property({
+    type: 'string',
+  })
+  phone?: string;
+
+  @property({
+    type: 'string',
+  })
+  fbId?: string;
+
+  @property({
+    type: 'string',
     required: true,
   })
   name: string;
 
-  @property({
-    type: 'number',
-    required: true,
-  })
-  minNr: number;
 
   @property({
     type: 'number',
     required: true,
   })
-  maxNr: number;
-
-  @property({
-    type: 'string',
-    required: true,
-  })
-  type: string;
-
-  @property({
-    type: 'string',
-  })
-  image?: string;
-
-  @property({
-    type: 'string',
-  })
-  link?: string;
-
-  @property({
-    type: 'number',
-  })
-  order?: number;
+  type: number;
 
 
-  constructor(data?: Partial<Set>) {
+  constructor(data?: Partial<Users>) {
     super(data);
   }
 }
 
-export interface SetRelations {
+export interface UsersRelations {
   // describe navigational properties here
 }
 
-export type SetWithRelations = Set & SetRelations;
+export type UsersWithRelations = Users & UsersRelations;

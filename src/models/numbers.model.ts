@@ -1,6 +1,8 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {Set} from './set.model';
+import {Users} from './users.model';
 
-@model()
+@model({settings: {strict: false}})
 export class Numbers extends Entity {
   @property({
     type: 'number',
@@ -11,16 +13,19 @@ export class Numbers extends Entity {
 
   @property({
     type: 'number',
-    required: true,
   })
-  number: number;
+  number?: number;
 
   @property({
     type: 'number',
-    required: true,
   })
-  type: number;
+  type?: number;
 
+  @belongsTo(() => Set)
+  setId: number;
+
+  @belongsTo(() => Users)
+  userId: number;
 
   constructor(data?: Partial<Numbers>) {
     super(data);

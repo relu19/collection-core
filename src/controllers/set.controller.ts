@@ -16,14 +16,15 @@ import {
   del,
   requestBody,
   response,
+  HttpErrors,
 } from '@loopback/rest';
 import {Set} from '../models';
-import {SetRepository} from '../repositories';
+import {NumbersRepository, SetRepository} from '../repositories';
 
 export class SetController {
   constructor(
-    @repository(SetRepository)
-    public setRepository : SetRepository,
+    @repository(SetRepository) public setRepository: SetRepository,
+    @repository(NumbersRepository) public numberRepository: NumbersRepository,
   ) {}
 
   @post('/sets')
@@ -37,14 +38,33 @@ export class SetController {
         'application/json': {
           schema: getModelSchemaRef(Set, {
             title: 'NewSet',
-            exclude: ['id'],
+
           }),
         },
       },
     })
-    set: Omit<Set, 'id'>,
-  ): Promise<Set> {
-    return this.setRepository.create(set);
+    set: Set,
+  ): Promise<{
+    setData: object
+  }> {
+    const createdSet = await this.setRepository.create(set);
+
+    // if (createdSet) {
+    //   for (let i = createdSet.minNr; i <= createdSet.maxNr; i++) {
+    //     await this.numberRepository.create({
+    //       number: i,
+    //       type: 0,
+    //       setId: createdSet.id
+    //     });
+    //   }
+    // }
+    try {
+      return {
+        setData: createdSet
+      };
+    } catch (error) {
+      throw new HttpErrors.ExpectationFailed('Something went wrong');
+    }
   }
 
   @get('/sets/count')
@@ -73,7 +93,7 @@ export class SetController {
   async find(
     @param.filter(Set) filter?: Filter<Set>,
   ): Promise<Set[]> {
-    return this.setRepository.find(filter);
+    return this.setRepository.find({...filter, order: ['id ASC']});
   }
 
   @patch('/sets')
