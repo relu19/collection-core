@@ -17,13 +17,14 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {Numbers} from '../models';
-import {NumbersRepository, UsersRepository} from '../repositories';
+import {Numbers, Set} from '../models';
+import {NumbersRepository, SetRepository, UsersRepository} from '../repositories';
 
 export class NumbersController {
   constructor(
     @repository(NumbersRepository) public numbersRepository: NumbersRepository,
     @repository(UsersRepository) public usersRepository: UsersRepository,
+    @repository(SetRepository) public setRepository: SetRepository,
   ) {
   }
 
@@ -76,11 +77,36 @@ export class NumbersController {
       },
     })
       numbers: any,
-  ): Promise<Numbers> {
-      await this.numbersRepository.deleteAll( {setId: numbers.setId, userId: numbers.userId})
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return {};
+  ): Promise<Count> {
+    return this.numbersRepository.deleteAll( {setId: numbers.setId, userId: numbers.userId})
+  }
+
+
+
+  @post('/remove-set')
+  @response(200, {
+    description: 'Set model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async deleteSetWithNumbers(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Numbers, {
+            title: 'NewSet',
+
+          }),
+        },
+      },
+    })
+      numbers: any,
+  ): Promise<Count> {
+
+    console.log('numbers', numbers);
+
+    await this.numbersRepository.deleteAll({setId: numbers.id});
+
+    return this.setRepository.deleteAll({id: numbers.id});
   }
 
 
