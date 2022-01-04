@@ -35,6 +35,12 @@ export class Set extends Entity {
 
   @property({
     type: 'string',
+    required: true,
+  })
+  category: string;
+
+  @property({
+    type: 'string',
   })
   image?: string;
 

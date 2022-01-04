@@ -4,12 +4,15 @@ import {
   RestExplorerBindings,
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
-import {RepositoryMixin} from '@loopback/repository';
+import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {MySequence} from './sequence';
+import * as dotenv from 'dotenv';
+import {UsersRepository} from './repositories';
 
+dotenv.config();
 export {ApplicationConfig};
 
 export class CollectionCoreApplication extends BootMixin(
@@ -40,5 +43,22 @@ export class CollectionCoreApplication extends BootMixin(
         nested: true,
       },
     };
+  }
+
+
+  async migrateSchema(options?: SchemaMigrationOptions) {
+    // 1. Run migration scripts provided by connectors
+    await super.migrateSchema({
+      existingSchema: 'alter',
+      models: [
+        'Numbers',
+        'Set',
+        'Users',
+      ],
+    });
+
+    // set Default address/ account/ location for corporate
+    const usersRepository = await this.getRepository(UsersRepository);
+    await usersRepository.createGod();
   }
 }

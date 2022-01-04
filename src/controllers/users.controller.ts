@@ -20,6 +20,7 @@ import {
 import {Users} from '../models';
 import {UsersRepository} from '../repositories';
 
+
 export class UsersController {
   constructor(
     @repository(UsersRepository)
@@ -49,7 +50,7 @@ export class UsersController {
       where: {fbId: users.fbId},
     });
     if (!existingUser) {
-      return this.usersRepository.create(users);
+      return this.usersRepository.create({...users});
     }
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore

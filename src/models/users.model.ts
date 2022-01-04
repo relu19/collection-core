@@ -38,6 +38,13 @@ export class Users extends Entity {
   type: number;
 
 
+  @property({
+    type: 'string',
+    required: true,
+  })
+  publicId?: string;
+
+
   constructor(data?: Partial<Users>) {
     super(data);
   }

@@ -17,7 +17,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {Numbers, Set} from '../models';
+import {Numbers} from '../models';
 import {NumbersRepository, SetRepository, UsersRepository} from '../repositories';
 
 export class NumbersController {
@@ -37,21 +37,38 @@ export class NumbersController {
     @requestBody({
       content: {
         'application/json': {
-          schema: getModelSchemaRef(Numbers, {
+          numbersData: getModelSchemaRef(Numbers, {
             title: 'NewNumbers',
             exclude: ['id'],
           }),
+          minNr: {
+            type: 'number',
+          },
+          maxNr: {
+            type: 'number',
+          },
         },
       },
     })
-      numbers: any,
-  ): Promise<Numbers> {
-    for (let i = numbers.minNr; i <= numbers.maxNr; i++) {
+      payload: {
+      numbersData: Omit<Numbers, 'id'>;
+      minNr: number;
+      maxNr: number;
+    },
+  ): Promise<{
+    number: number;
+    size: string;
+    type: string | undefined;
+    setId: number;
+    userId: number;
+  }> {
+
+    for (let i = payload.minNr; i <= payload.maxNr; i++) {
       await this.numbersRepository.create({
         number: i,
         type: 0,
-        setId: numbers.setId,
-        userId: numbers.userId
+        setId: payload.numbersData.setId,
+        userId: payload.numbersData.userId,
       });
     }
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -76,11 +93,10 @@ export class NumbersController {
         },
       },
     })
-      numbers: any,
+      numbers: Omit<Numbers, 'id'>,
   ): Promise<Count> {
-    return this.numbersRepository.deleteAll( {setId: numbers.setId, userId: numbers.userId})
+    return this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
   }
-
 
 
   @post('/remove-set')
@@ -101,9 +117,6 @@ export class NumbersController {
     })
       numbers: any,
   ): Promise<Count> {
-
-    console.log('numbers', numbers);
-
     await this.numbersRepository.deleteAll({setId: numbers.id});
 
     return this.setRepository.deleteAll({id: numbers.id});
@@ -155,7 +168,7 @@ export class NumbersController {
       numbers: Numbers,
     @param.where(Numbers) where?: Where<Numbers>,
   ): Promise<Count> {
-    return this.numbersRepository.updateAll(numbers, where);
+    return this.numbersRepository.updateAll({type: numbers.type}, {setId: numbers.setId, userId: numbers.userId});
   }
 
   @get('/numbers/{id}')

@@ -2,7 +2,7 @@ import {Entity, model, property, belongsTo} from '@loopback/repository';
 import {Set} from './set.model';
 import {Users} from './users.model';
 
-@model({settings: {strict: false}})
+@model()
 export class Numbers extends Entity {
   @property({
     type: 'number',
