@@ -9,10 +9,9 @@ import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {MySequence} from './sequence';
-import * as dotenv from 'dotenv';
+
 import {UsersRepository} from './repositories';
 
-dotenv.config();
 export {ApplicationConfig};
 
 export class CollectionCoreApplication extends BootMixin(

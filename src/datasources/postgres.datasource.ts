@@ -6,12 +6,7 @@ const sslMode = (process.env.ENVIRONMENT ?? 'local') !== 'local';
 const config = {
   name: 'postgres',
   connector: 'postgresql',
-  url: '',
-  host:'localhost',
-  port: 5432,
-  user: 'postgres',
-  password: 'Ucluj1919!',
-  database: 'postgres',
+  url: process.env.DATABASE_URL,
   ssl: sslMode ? { rejectUnauthorized: false } : false,
 };
 
