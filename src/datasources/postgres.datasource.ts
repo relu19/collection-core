@@ -1,6 +1,8 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
 
+const sslMode = (process.env.ENVIRONMENT ?? 'local') !== 'local';
+
 const config = {
   name: 'postgres',
   connector: 'postgresql',
@@ -10,6 +12,7 @@ const config = {
   user: 'postgres',
   password: 'Ucluj1919!',
   database: 'postgres',
+  ssl: sslMode ? { rejectUnauthorized: false } : false,
 };
 
 // Observe application's life cycle to disconnect the datasource when
