@@ -18,15 +18,47 @@ import {
   response,
 } from '@loopback/rest';
 import {Users} from '../models';
-import {UsersRepository} from '../repositories';
+import {NumbersRepository, UsersRepository} from '../repositories';
 
 
 export class UsersController {
   constructor(
-    @repository(UsersRepository)
-    public usersRepository: UsersRepository,
-  ) {
+    @repository(NumbersRepository) public numbersRepository: NumbersRepository,
+    @repository(UsersRepository) public usersRepository: UsersRepository,
+    ) {
   }
+
+  @post('/remove-users')
+  @response(200, {
+    description: 'Users model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Users)}},
+  })
+  async remove(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Users, {
+            title: 'RemoveUsers',
+            exclude: ['id'],
+          }),
+        },
+      },
+    })
+      users: Omit<Users, 'id'>,
+  ): Promise<Users> {
+    const existingUser = await this.usersRepository.findOne({
+      where: {fbId: users.fbId},
+    });
+    if (existingUser) {
+      await this.numbersRepository.deleteAll({
+        userId: existingUser.id,
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    return this.usersRepository.deleteById(existingUser.id);
+  }
+
 
   @post('/users')
   @response(200, {

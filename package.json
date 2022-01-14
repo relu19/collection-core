@@ -29,6 +29,7 @@
     "docker:run": "docker run -p 3000:3000 -d collection-core",
     "premigrate": "npm run build",
     "migrate": "node ./dist/migrate",
+    "prestart": "npm run rebuild",
     "preopenapi-spec": "npm run build",
     "openapi-spec": "node ./dist/openapi-spec",
     "start": "node -r source-map-support/register .",
