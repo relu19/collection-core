@@ -1,9 +1,8 @@
 import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {SetType} from './set-type.model';
 import {Category} from './category.model';
 
 @model()
-export class Set extends Entity {
+export class SetType extends Entity {
   @property({
     type: 'number',
     id: true,
@@ -18,45 +17,25 @@ export class Set extends Entity {
   name: string;
 
   @property({
-    type: 'number',
-    required: true,
-  })
-  minNr: number;
-
-  @property({
-    type: 'number',
-    required: true,
-  })
-  maxNr: number;
-
-  @property({
     type: 'string',
   })
-  image?: string;
-
-  @property({
-    type: 'string',
-  })
-  link?: string;
+  icon?: string;
 
   @property({
     type: 'number',
   })
   order?: number;
 
-  @belongsTo(() => SetType)
-  setTypeId: number;
-
   @belongsTo(() => Category)
   categoryId: number;
 
-  constructor(data?: Partial<Set>) {
+  constructor(data?: Partial<SetType>) {
     super(data);
   }
 }
 
-export interface SetRelations {
+export interface SetTypeRelations {
   // describe navigational properties here
 }
 
-export type SetWithRelations = Set & SetRelations;
+export type SetTypeWithRelations = SetType & SetTypeRelations;

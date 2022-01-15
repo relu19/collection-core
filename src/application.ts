@@ -10,8 +10,6 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import path from 'path';
 import {MySequence} from './sequence';
 
-import {UsersRepository} from './repositories';
-
 export {ApplicationConfig};
 
 export class CollectionCoreApplication extends BootMixin(
@@ -53,11 +51,9 @@ export class CollectionCoreApplication extends BootMixin(
         'Numbers',
         'Set',
         'Users',
+        'Category',
+        'SetType',
       ],
     });
-
-    // set Default address/ account/ location for corporate
-    const usersRepository = await this.getRepository(UsersRepository);
-    await usersRepository.createGod();
   }
 }
