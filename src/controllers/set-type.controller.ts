@@ -17,7 +17,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {Category, SetType} from '../models';
+import {SetType} from '../models';
 import {SetTypeRepository} from '../repositories';
 
 export class SetTypeController {
