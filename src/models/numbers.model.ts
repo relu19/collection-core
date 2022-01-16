@@ -27,6 +27,11 @@ export class Numbers extends Entity {
   @belongsTo(() => Users)
   userId: number;
 
+  @property({
+    type: 'number',
+  })
+  categoryId?: number;
+
   constructor(data?: Partial<Numbers>) {
     super(data);
   }

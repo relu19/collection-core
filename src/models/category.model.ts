@@ -1,4 +1,5 @@
-import {Entity, model, property} from '@loopback/repository';
+import {Entity, model, property, hasMany} from '@loopback/repository';
+import {Numbers} from './numbers.model';
 
 @model()
 export class Category extends Entity {
@@ -19,6 +20,9 @@ export class Category extends Entity {
     type: 'number',
   })
   order?: number;
+
+  @hasMany(() => Numbers)
+  numbers: Numbers[];
 
   constructor(data?: Partial<Category>) {
     super(data);

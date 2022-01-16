@@ -9,3 +9,4 @@ export * from './set-type.controller';
 export * from './set-type-category.controller';
 export * from './set-set-type.controller';
 export * from './set-category.controller';
+export * from './category-numbers.controller';

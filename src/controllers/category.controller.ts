@@ -47,6 +47,28 @@ export class CategoryController {
     return this.categoryRepository.create(category);
   }
 
+  @post('/remove-category')
+  @response(200, {
+    description: 'Category model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Category)}},
+  })
+  async deleteCategory(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Category, {
+            title: 'DeleteCategory',
+          }),
+        },
+      },
+    })
+      category: Category,
+  ): Promise<void> {
+    return this.categoryRepository.deleteById(category.id);
+  }
+
+
+
   @get('/categories/count')
   @response(200, {
     description: 'Category model count',

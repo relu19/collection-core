@@ -17,7 +17,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {SetType} from '../models';
+import {Category, SetType} from '../models';
 import {SetTypeRepository} from '../repositories';
 
 export class SetTypeController {
@@ -46,6 +46,27 @@ export class SetTypeController {
   ): Promise<SetType> {
     return this.setTypeRepository.create(setType);
   }
+
+  @post('/remove-set-type')
+  @response(200, {
+    description: 'SetType model instance',
+    content: {'application/json': {schema: getModelSchemaRef(SetType)}},
+  })
+  async deleteSetType(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(SetType, {
+            title: 'DeleteSetType',
+          }),
+        },
+      },
+    })
+      setType: SetType,
+  ): Promise<void> {
+    return this.setTypeRepository.deleteById(setType.id);
+  }
+
 
   @get('/set-types/count')
   @response(200, {
