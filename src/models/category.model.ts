@@ -21,9 +21,6 @@ export class Category extends Entity {
   })
   order?: number;
 
-  @hasMany(() => Numbers)
-  numbers: Numbers[];
-
   constructor(data?: Partial<Category>) {
     super(data);
   }
