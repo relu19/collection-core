@@ -3,3 +3,4 @@ export * from './numbers.repository';
 export * from './users.repository';
 export * from './category.repository';
 export * from './set-type.repository';
+export * from './set-users.repository';

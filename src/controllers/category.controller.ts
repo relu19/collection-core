@@ -12,8 +12,6 @@ import {
   get,
   getModelSchemaRef,
   patch,
-  put,
-  del,
   requestBody,
   response,
 } from '@loopback/rest';
@@ -149,24 +147,5 @@ export class CategoryController {
     category: Category,
   ): Promise<void> {
     await this.categoryRepository.updateById(id, category);
-  }
-
-  @put('/categories/{id}')
-  @response(204, {
-    description: 'Category PUT success',
-  })
-  async replaceById(
-    @param.path.number('id') id: number,
-    @requestBody() category: Category,
-  ): Promise<void> {
-    await this.categoryRepository.replaceById(id, category);
-  }
-
-  @del('/categories/{id}')
-  @response(204, {
-    description: 'Category DELETE success',
-  })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
-    await this.categoryRepository.deleteById(id);
   }
 }

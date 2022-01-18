@@ -13,22 +13,22 @@ import {
   getModelSchemaRef,
   patch,
   put,
-  del,
   requestBody,
   response,
 } from '@loopback/rest';
 import {Numbers} from '../models';
-import {NumbersRepository, SetRepository, UsersRepository} from '../repositories';
+import {NumbersRepository, SetRepository, SetUsersRepository, UsersRepository} from '../repositories';
 
 export class NumbersController {
   constructor(
     @repository(NumbersRepository) public numbersRepository: NumbersRepository,
     @repository(UsersRepository) public usersRepository: UsersRepository,
     @repository(SetRepository) public setRepository: SetRepository,
+    @repository(SetUsersRepository) public setUsersRepository: SetUsersRepository,
   ) {
   }
 
-  @post('/numbers')
+  @post('/number')
   @response(200, {
     description: 'Numbers model instance',
     content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
@@ -37,47 +37,57 @@ export class NumbersController {
     @requestBody({
       content: {
         'application/json': {
-          numbersData: getModelSchemaRef(Numbers, {
+          schema: getModelSchemaRef(Numbers, {
             title: 'NewNumbers',
             exclude: ['id'],
           }),
-          minNr: {
-            type: 'number',
-          },
-          maxNr: {
-            type: 'number',
-          },
         },
       },
     })
-      payload: {
-      numbersData: Omit<Numbers, 'id'>;
-      minNr: number;
-      maxNr: number;
-    },
-  ): Promise<{
-    number: number;
-    size: string;
-    type: string | undefined;
-    setId: number;
-    userId: number;
-  }> {
-
-    for (let i = payload.minNr; i <= payload.maxNr; i++) {
-      await this.numbersRepository.create({
-        number: i,
-        type: 0,
-        setId: payload.numbersData.setId,
-        userId: payload.numbersData.userId,
-      });
-    }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return {};
+      numbers: Omit<Numbers, 'id'>,
+  ): Promise<Numbers> {
+    return this.numbersRepository.create(numbers);
   }
 
+  @patch('/number/{id}')
+  @response(204, {
+    description: 'Numbers PATCH success',
+  })
+  async updateById(
+    @param.path.number('id') id: number,
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Numbers, {partial: true}),
+        },
+      },
+    })
+      numbers: Numbers,
+  ): Promise<void> {
+    await this.numbersRepository.updateById(id, numbers);
+  }
 
-  @post('/remove-numbers')
+  @post('/remove-number')
+  @response(200, {
+    description: 'Numbers model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async deleteNumber(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Numbers, {
+            title: 'RemoveNumbers'
+          }),
+        },
+      },
+    })
+      numbers: Numbers,
+  ): Promise<void> {
+    return this.numbersRepository.deleteById(numbers.id);
+  }
+
+  @post('/remove-numbers-from-collection')
   @response(200, {
     description: 'Numbers model instance',
     content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
@@ -95,9 +105,87 @@ export class NumbersController {
     })
       numbers: Omit<Numbers, 'id'>,
   ): Promise<Count> {
+    await this.setUsersRepository.deleteAll({setId: numbers.setId, usersId: numbers.userId});
     return this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
   }
 
+  @post('/add-all-numbers')
+  @response(200, {
+    description: 'Numbers model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async createAll(
+    @requestBody({
+      content: {
+        'application/json': {
+          minNr: {
+            type: 'number',
+          },
+          maxNr: {
+            type: 'number',
+          },
+          type: {
+            type: 'number',
+          },
+          setId: {
+            type: 'number',
+          },
+          userId: {
+            type: 'number',
+          },
+        },
+      },
+    })
+      payload: {
+      numbersData: Omit<Numbers, 'id'>;
+      minNr: number;
+      maxNr: number;
+      type: number;
+      setId: number;
+      userId: number;
+    },
+  ): Promise<{
+    number: number;
+    size: string;
+    type: string | undefined;
+    setId: number;
+    userId: number;
+  }> {
+    await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId})
+
+    for (let i = payload.minNr; i <= payload.maxNr; i++) {
+      await this.numbersRepository.create({
+        number: i,
+        type: payload.type,
+        setId: payload.setId,
+        userId: payload.userId,
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    return {};
+  }
+
+  @post('/remove-all-numbers')
+  @response(200, {
+    description: 'Numbers model instance',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async deleteAll(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(Numbers, {
+            title: 'NewNumbers',
+            exclude: ['id'],
+          }),
+        },
+      },
+    })
+      numbers: Omit<Numbers, 'id'>,
+  ): Promise<Count> {
+    return this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
+  }
 
   @post('/remove-set')
   @response(200, {
@@ -118,10 +206,10 @@ export class NumbersController {
       numbers: any,
   ): Promise<Count> {
     await this.numbersRepository.deleteAll({setId: numbers.id});
+    await this.setUsersRepository.deleteAll({setId: numbers.setId, usersId: numbers.userId});
 
     return this.setRepository.deleteAll({id: numbers.id});
   }
-
 
   @get('/numbers/count')
   @response(200, {
@@ -152,25 +240,6 @@ export class NumbersController {
     return this.numbersRepository.find({...filter, order: ['id ASC']});
   }
 
-  @patch('/numbers')
-  @response(200, {
-    description: 'Numbers PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Numbers, {partial: true}),
-        },
-      },
-    })
-      numbers: Numbers,
-    @param.where(Numbers) where?: Where<Numbers>,
-  ): Promise<Count> {
-    return this.numbersRepository.updateAll({type: numbers.type}, {setId: numbers.setId, userId: numbers.userId});
-  }
-
   @get('/numbers/{id}')
   @response(200, {
     description: 'Numbers model instance',
@@ -187,23 +256,6 @@ export class NumbersController {
     return this.numbersRepository.findById(id, filter);
   }
 
-  @patch('/numbers/{id}')
-  @response(204, {
-    description: 'Numbers PATCH success',
-  })
-  async updateById(
-    @param.path.number('id') id: number,
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Numbers, {partial: true}),
-        },
-      },
-    })
-      numbers: Numbers,
-  ): Promise<void> {
-    await this.numbersRepository.updateById(id, numbers);
-  }
 
   @put('/numbers/{id}')
   @response(204, {
@@ -214,13 +266,5 @@ export class NumbersController {
     @requestBody() numbers: Numbers,
   ): Promise<void> {
     await this.numbersRepository.replaceById(id, numbers);
-  }
-
-  @del('/numbers/{id}')
-  @response(204, {
-    description: 'Numbers DELETE success',
-  })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
-    await this.numbersRepository.deleteById(id);
   }
 }

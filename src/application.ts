@@ -53,6 +53,7 @@ export class CollectionCoreApplication extends BootMixin(
         'Users',
         'Category',
         'SetType',
+        'SetUsers',
       ],
     });
   }

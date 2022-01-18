@@ -9,3 +9,8 @@ export * from './set-type.controller';
 export * from './set-type-category.controller';
 export * from './set-set-type.controller';
 export * from './set-category.controller';
+export * from './set-user.controller';
+export * from './set-users-set-type.controller';
+export * from './set-users-category.controller';
+export * from './set-users-users.controller';
+export * from './set-users-set.controller';

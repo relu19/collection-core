@@ -3,3 +3,4 @@ export * from './numbers.model';
 export * from './users.model';
 export * from './category.model';
 export * from './set-type.model';
+export * from './set-users.model';
