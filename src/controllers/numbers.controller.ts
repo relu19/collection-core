@@ -47,10 +47,9 @@ export class NumbersController {
       numbers: Omit<Numbers, 'id'>,
   ): Promise<Numbers> {
     await this.numbersRepository.create(numbers);
-
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({userId: numbers.userId, setId: numbers.setId});
+    return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
   @patch('/number/{id}')
@@ -69,9 +68,10 @@ export class NumbersController {
       numbers: Numbers,
   ): Promise<void> {
     await this.numbersRepository.updateById(id, numbers);
+
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({userId: numbers.userId, setId: numbers.setId});
+    return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
   @post('/remove-number')
@@ -84,7 +84,7 @@ export class NumbersController {
       content: {
         'application/json': {
           schema: getModelSchemaRef(Numbers, {
-            title: 'RemoveNumbers'
+            title: 'RemoveNumbers',
           }),
         },
       },
@@ -94,7 +94,7 @@ export class NumbersController {
     await this.numbersRepository.deleteById(numbers.id);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({userId: numbers.userId, setId: numbers.setId});
+    return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
   @post('/remove-numbers-from-collection')
@@ -161,8 +161,7 @@ export class NumbersController {
     setId: number;
     userId: number;
   }> {
-    await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId})
-
+    await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId});
     for (let i = payload.minNr; i <= payload.maxNr; i++) {
       await this.numbersRepository.create({
         number: i,
@@ -173,7 +172,7 @@ export class NumbersController {
     }
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({userId: payload.userId, setId: payload.setId});
+    return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
   @post('/remove-all-numbers')
@@ -197,7 +196,7 @@ export class NumbersController {
     await this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({setId: numbers.setId, userId: numbers.userId});
+    return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
   @post('/remove-set')
@@ -224,7 +223,7 @@ export class NumbersController {
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.numbersRepository.find({userId: numbers.userId, setId: numbers.setId});
+    return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
   @get('/numbers/count')
