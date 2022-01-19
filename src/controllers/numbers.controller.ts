@@ -97,7 +97,7 @@ export class NumbersController {
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
-  @post('/remove-numbers-from-collection')
+  @post('/remove-set-from-collection')
   @response(200, {
     description: 'Numbers model instance',
     content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
