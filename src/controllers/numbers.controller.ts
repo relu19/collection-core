@@ -16,7 +16,7 @@ import {
   requestBody,
   response,
 } from '@loopback/rest';
-import {Numbers} from '../models';
+import {Numbers, NumbersRelations} from '../models';
 import {NumbersRepository, SetRepository, SetUsersRepository, UsersRepository} from '../repositories';
 
 export class NumbersController {
@@ -45,10 +45,8 @@ export class NumbersController {
       },
     })
       numbers: Omit<Numbers, 'id'>,
-  ): Promise<Numbers> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.create(numbers);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
@@ -66,11 +64,8 @@ export class NumbersController {
       },
     })
       numbers: Numbers,
-  ): Promise<void> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.updateById(id, numbers);
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
@@ -90,10 +85,8 @@ export class NumbersController {
       },
     })
       numbers: Numbers,
-  ): Promise<void> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteById(numbers.id);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
@@ -154,13 +147,7 @@ export class NumbersController {
       setId: number;
       userId: number;
     },
-  ): Promise<{
-    number: number;
-    size: string;
-    type: string | undefined;
-    setId: number;
-    userId: number;
-  }> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId});
     for (let i = payload.minNr; i <= payload.maxNr; i++) {
       await this.numbersRepository.create({
@@ -170,8 +157,6 @@ export class NumbersController {
         userId: payload.userId,
       });
     }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
@@ -192,10 +177,8 @@ export class NumbersController {
       },
     })
       numbers: Omit<Numbers, 'id'>,
-  ): Promise<Count> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
@@ -216,13 +199,10 @@ export class NumbersController {
       },
     })
       numbers: any,
-  ): Promise<Count> {
+  ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: numbers.id});
     await this.setUsersRepository.deleteAll({setId: numbers.id, usersId: numbers.userId});
     await this.setRepository.deleteAll({id: numbers.id});
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 

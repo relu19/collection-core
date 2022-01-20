@@ -1,6 +1,6 @@
 import {Count, CountSchema, Filter, FilterExcludingWhere, repository, Where} from '@loopback/repository';
 import {del, get, getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody, response} from '@loopback/rest';
-import {Set} from '../models';
+import {Set, SetRelations} from '../models';
 import { SetRepository} from '../repositories';
 
 export class SetController {
@@ -117,8 +117,9 @@ export class SetController {
       },
     })
     set: Set,
-  ): Promise<void> {
+  ): Promise<Set & SetRelations> {
     await this.setRepository.updateById(id, set);
+    return this.setRepository.findById(id);
   }
 
   @put('/sets/{id}')
