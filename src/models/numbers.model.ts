@@ -21,6 +21,11 @@ export class Numbers extends Entity {
   })
   type?: number;
 
+  @property({
+    type: 'string',
+  })
+  desc?: string;
+
   @belongsTo(() => Set)
   setId: number;
 

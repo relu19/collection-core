@@ -44,6 +44,16 @@ export class Set extends Entity {
   })
   order?: number;
 
+  @property({
+    type: 'string',
+  })
+  group?: string;
+
+  @property({
+    type: 'string',
+  })
+  extraNumbers?: string;
+
   @belongsTo(() => SetType)
   setTypeId: number;
 
