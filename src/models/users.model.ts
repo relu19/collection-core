@@ -22,6 +22,11 @@ export class Users extends Entity {
   @property({
     type: 'string',
   })
+  logo?: string;
+
+  @property({
+    type: 'string',
+  })
   fbId?: string;
 
   @property({

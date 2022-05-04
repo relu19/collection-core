@@ -86,7 +86,7 @@ export class UsersController {
     }
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    return this.usersRepository.updateById(existingUser.id, {name: users.name, email: users.email, phone: users.phone});
+    return this.usersRepository.updateById(existingUser.id, {name: users.name, email: users.email, phone: users.phone, logo: users.logo});
   }
 
   @get('/users/count')
