@@ -14,16 +14,11 @@
   "scripts": {
     "build": "lb-tsc",
     "build:watch": "lb-tsc --watch",
-    "lint": "npm run eslint && npm run prettier:check",
-    "lint:fix": "npm run eslint:fix && npm run prettier:fix",
     "prettier:cli": "lb-prettier \"**/*.ts\" \"**/*.js\"",
     "prettier:check": "npm run prettier:cli -- -l",
     "prettier:fix": "npm run prettier:cli -- --write",
-    "eslint": "lb-eslint --report-unused-disable-directives .",
-    "eslint:fix": "npm run eslint -- --fix",
     "pretest": "npm run rebuild",
     "test": "lb-mocha --allow-console-logs \"dist/__tests__\"",
-    "posttest": "npm run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
     "docker:build": "docker build -t collection-core .",
     "docker:run": "docker run -p 3000:3000 -d collection-core",
@@ -33,7 +28,7 @@
     "preopenapi-spec": "npm run build",
     "openapi-spec": "node ./dist/openapi-spec",
     "start": "node -r source-map-support/register .",
-    "clean": "lb-clean dist *.tsbuildinfo .eslintcache",
+    "clean": "lb-clean dist *.tsbuildinfo",
     "rebuild": "npm run clean && npm run build"
   },
   "repository": {
@@ -52,7 +47,6 @@
     "@loopback/boot": "^7.0.10",
     "@loopback/build": "^11.0.9",
     "@loopback/core": "^6.1.7",
-    "@loopback/eslint-config": "^15.0.5",
     "@loopback/repository": "^7.0.10",
     "@loopback/rest": "^14.0.10",
     "@loopback/rest-explorer": "^7.0.10",
@@ -64,7 +58,6 @@
   },
   "devDependencies": {
     "@loopback/testlab": "^7.0.9",
-    "eslint": "^9.19.0",
     "source-map-support": "0.5.21",
     "typescript": "^5.7.3"
   }
