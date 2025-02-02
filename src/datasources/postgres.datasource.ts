@@ -3,11 +3,27 @@ import {juggler} from '@loopback/repository';
 
 const sslMode = (process.env.ENVIRONMENT ?? 'local') !== 'local';
 
+
+// Local
+// const config = {
+//   name: 'postgres',
+//   connector: 'postgresql',
+//   url: process.env.DATABASE_URL,
+//   ssl: sslMode ? { rejectUnauthorized: false } : false,
+//   connectionTimeoutMillis: 10000,  // Set the timeout to 10 seconds
+//   statement_timeout: 30000,
+// };
+
+// Heroku
 const config = {
   name: 'postgres',
   connector: 'postgresql',
   url: process.env.DATABASE_URL,
-  ssl: sslMode ? { rejectUnauthorized: false } : false,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeoutMillis: 20000,
+  statement_timeout: 30000,
 };
 
 // Observe application's life cycle to disconnect the datasource when
