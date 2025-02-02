@@ -11,21 +11,25 @@ export class Users extends Entity {
 
   @property({
     type: 'string',
+    default: '', // default value to avoid undefined if no value is provided
   })
   email?: string;
 
   @property({
     type: 'string',
+    default: '', // default value to avoid undefined if no value is provided
   })
   phone?: string;
 
   @property({
     type: 'string',
+    default: '', // default value to avoid undefined if no value is provided
   })
   logo?: string;
 
   @property({
     type: 'string',
+    default: '', // default value to avoid undefined if no value is provided
   })
   fbId?: string;
 
@@ -35,20 +39,17 @@ export class Users extends Entity {
   })
   name: string;
 
-
   @property({
     type: 'number',
     required: true,
   })
   type: number;
 
-
   @property({
     type: 'string',
     required: true,
   })
-  publicId?: string;
-
+  publicId: string;  // Marked as required if needed, or optional
 
   constructor(data?: Partial<Users>) {
     super(data);
