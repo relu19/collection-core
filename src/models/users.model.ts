@@ -47,9 +47,9 @@ export class Users extends Entity {
 
   @property({
     type: 'string',
-    required: true,
+    required: false,
   })
-  publicId: string;  // Marked as required if needed, or optional
+  publicId: string;
 
   constructor(data?: Partial<Users>) {
     super(data);

@@ -47,7 +47,7 @@ export class UsersController {
       users: Omit<Users, 'id'>,
   ): Promise<Users> {
     const existingUser = await this.usersRepository.findOne({
-      where: {fbId: users.fbId},
+      where: {email: users.email},
     });
     if (existingUser) {
       await this.numbersRepository.deleteAll({
@@ -79,7 +79,7 @@ export class UsersController {
       users: Omit<Users, 'id'>,
   ): Promise<Users> {
     const existingUser = await this.usersRepository.findOne({
-      where: {fbId: users.fbId},
+      where: {email: users.email},
     });
     if (!existingUser) {
       return this.usersRepository.create({...users});
