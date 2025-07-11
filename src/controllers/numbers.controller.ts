@@ -121,42 +121,47 @@ export class NumbersController {
     @requestBody({
       content: {
         'application/json': {
-          minNr: {
-            type: 'number',
-          },
-          maxNr: {
-            type: 'number',
-          },
-          type: {
-            type: 'number',
-          },
-          setId: {
-            type: 'number',
-          },
-          userId: {
-            type: 'number',
-          },
+          schema: {
+            type: 'object',
+            properties: {
+              numbers: {
+                type: 'array',
+                items: {
+                  type: 'string'
+                }
+              },
+              type: {
+                type: 'number'
+              },
+              setId: {
+                type: 'number'
+              },
+              userId: {
+                type: 'number'
+              }
+            }
+          }
         },
       },
     })
     payload: {
-      numbersData: Omit<Numbers, 'id'>;
-      minNr: number;
-      maxNr: number;
+      numbers: string[];
       type: number;
       setId: number;
       userId: number;
     },
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId});
-    for (let i = payload.minNr; i <= payload.maxNr; i++) {
+
+    for (const num of payload.numbers) {
       await this.numbersRepository.create({
-        number: i.toString(),  // Convert number to string
+        number: num,
         type: payload.type,
         setId: payload.setId,
         userId: payload.userId,
       });
     }
+
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
