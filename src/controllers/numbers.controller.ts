@@ -7,11 +7,11 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  post,
-  param,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
   requestBody,
   response,
@@ -44,7 +44,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: Omit<Numbers, 'id'>,
+    numbers: Omit<Numbers, 'id'>,
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.create(numbers);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
@@ -63,7 +63,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: Numbers,
+    numbers: Numbers,
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.updateById(id, numbers);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
@@ -84,7 +84,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: Numbers,
+    numbers: Numbers,
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteById(numbers.id);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
@@ -106,7 +106,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: Omit<Numbers, 'id'>,
+    numbers: Omit<Numbers, 'id'>,
   ): Promise<Count> {
     await this.setUsersRepository.deleteAll({setId: numbers.setId, usersId: numbers.userId});
     return this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
@@ -139,7 +139,7 @@ export class NumbersController {
         },
       },
     })
-      payload: {
+    payload: {
       numbersData: Omit<Numbers, 'id'>;
       minNr: number;
       maxNr: number;
@@ -151,7 +151,7 @@ export class NumbersController {
     await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId});
     for (let i = payload.minNr; i <= payload.maxNr; i++) {
       await this.numbersRepository.create({
-        number: i,
+        number: i.toString(),  // Convert number to string
         type: payload.type,
         setId: payload.setId,
         userId: payload.userId,
@@ -176,7 +176,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: Omit<Numbers, 'id'>,
+    numbers: Omit<Numbers, 'id'>,
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
@@ -198,7 +198,7 @@ export class NumbersController {
         },
       },
     })
-      numbers: any,
+    numbers: any,
   ): Promise<(Numbers & NumbersRelations)[]> {
     await this.numbersRepository.deleteAll({setId: numbers.id});
     await this.setUsersRepository.deleteAll({setId: numbers.id, usersId: numbers.userId});
