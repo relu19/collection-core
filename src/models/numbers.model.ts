@@ -1,4 +1,4 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {Set} from './set.model';
 import {Users} from './users.model';
 
@@ -12,9 +12,9 @@ export class Numbers extends Entity {
   id?: number;
 
   @property({
-    type: 'number',
+    type: 'string',
   })
-  number?: number;
+  number?: string;
 
   @property({
     type: 'number',
