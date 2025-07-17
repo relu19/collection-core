@@ -26,6 +26,12 @@ export class Numbers extends Entity {
   })
   desc?: string;
 
+  @property({
+    type: 'boolean',
+    default: false,
+  })
+  extra?: boolean;
+
   @belongsTo(() => Set)
   setId: number;
 

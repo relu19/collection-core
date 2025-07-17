@@ -127,39 +127,58 @@ export class NumbersController {
               numbers: {
                 type: 'array',
                 items: {
-                  type: 'string'
+                  type: 'object',
+                  properties: {
+                    number: {type: 'string'},
+                    extra: {type: 'boolean'},
+                    desc: {type: 'string'}
+                  },
+                  required: ['number', 'extra']
                 }
               },
-              type: {
-                type: 'number'
-              },
-              setId: {
-                type: 'number'
-              },
-              userId: {
-                type: 'number'
-              }
-            }
+              type: {type: 'number'},
+              setId: {type: 'number'},
+              userId: {type: 'number'}
+            },
+            required: ['numbers', 'type', 'setId', 'userId']
           }
         },
       },
     })
     payload: {
-      numbers: string[];
+      numbers: {number: string; extra: boolean; desc?: string}[];
       type: number;
       setId: number;
       userId: number;
     },
   ): Promise<(Numbers & NumbersRelations)[]> {
-    await this.numbersRepository.deleteAll({setId: payload.setId, userId: payload.userId});
+    // Find all existing numbers for this set/user
+    const existingNumbers = await this.numbersRepository.find({
+      where: {setId: payload.setId, userId: payload.userId}
+    });
+    // Always compare numbers as strings, skip if n.number is undefined
+    const existingNumbersMap = new Map(existingNumbers.filter(n => n.number !== undefined).map(n => [n.number!.toString(), n]));
 
-    for (const num of payload.numbers) {
-      await this.numbersRepository.create({
-        number: num,
-        type: payload.type,
-        setId: payload.setId,
-        userId: payload.userId,
-      });
+    for (const numObj of payload.numbers) {
+      const {number, extra, desc} = numObj;
+      const key = number.toString();
+      if (existingNumbersMap.has(key)) {
+        const existing = existingNumbersMap.get(key);
+        // Always update type, even if it's the same
+        if (existing) {
+          await this.numbersRepository.updateById(existing.id, {type: payload.type});
+        }
+      } else {
+        // Create new number
+        await this.numbersRepository.create({
+          number: key,
+          type: payload.type,
+          setId: payload.setId,
+          userId: payload.userId,
+          extra: extra,
+          desc: desc
+        });
+      }
     }
 
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
@@ -266,5 +285,32 @@ export class NumbersController {
     @requestBody() numbers: Numbers,
   ): Promise<void> {
     await this.numbersRepository.replaceById(id, numbers);
+  }
+
+  @post('/remove-extra-numbers')
+  @response(200, {
+    description: 'Remove all extra numbers for a set',
+    content: {'application/json': {schema: {type: 'object', properties: {count: {type: 'number'}}}}},
+  })
+  async deleteExtraNumbers(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              setId: {type: 'number'},
+            },
+            required: ['setId'],
+          },
+        },
+      },
+    })
+    payload: {setId: number},
+  ): Promise<{count: number}> {
+    const result = await this.numbersRepository.deleteAll({setId: payload.setId, extra: true});
+    // Also clear extraNumbers field in the set
+    await this.setRepository.updateById(payload.setId, {extraNumbers: ''});
+    return {count: result.count};
   }
 }
