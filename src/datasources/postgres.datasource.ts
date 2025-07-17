@@ -1,36 +1,33 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-// Add import for pg-connection-string
-import {parse as parseConnectionString} from 'pg-connection-string';
 
-// Local database configuration
-const localConfig = {
+const sslMode = (process.env.ENVIRONMENT ?? 'local') !== 'local';
+
+// Local
+const config = {
   name: 'postgres',
   connector: 'postgresql',
-  host: 'localhost',
-  port: 5432,
-  database: 'collection_local',
-  username: 'postgres',
-  password: 'admin',
-  // No SSL needed for local
-  max: 20,
-  connectionTimeoutMillis: 30000
+  url: process.env.DATABASE_URL,
+  ssl: sslMode ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
 };
 
-// Use DATABASE_URL from environment if available, otherwise use localConfig
-const config = process.env.DATABASE_URL
-  ? {
-    ...parseConnectionString(process.env.DATABASE_URL),
-    name: 'postgres',
-    connector: 'postgresql',
-    max: 20,
-    connectionTimeoutMillis: 30000,
-    // Optionally add ssl: { rejectUnauthorized: false } if needed for production
-  }
-  : localConfig;
+// Heroku
+// const config = {
+//   name: 'postgres',
+//   connector: 'postgresql',
+//   url: process.env.DATABASE_URL,
+//   ssl: {
+//     rejectUnauthorized: false,
+//   },
+//   connectionTimeoutMillis: 20000,
+//   statement_timeout: 30000,
+// };
 
-// To switch configs: comment out the active config and uncomment the one you want to use.
-
+// Observe application's life cycle to disconnect the datasource when
+// application is stopped. This allows the application to be shut down
+// gracefully. The `stop()` method is inherited from `juggler.DataSource`.
+// Learn more at https://loopback.io/doc/en/lb4/Life-cycle.html
 @lifeCycleObserver('datasource')
 export class PostgresDataSource extends juggler.DataSource
   implements LifeCycleObserver {
@@ -42,10 +39,5 @@ export class PostgresDataSource extends juggler.DataSource
     dsConfig: object = config,
   ) {
     super(dsConfig);
-
-    // Add connection error handler
-    this.on('error', (err: Error) => {
-      console.error('Database connection error:', err);
-    });
   }
 }
