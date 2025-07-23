@@ -1,6 +1,6 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
-import {SetType} from './set-type.model';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {Category} from './category.model';
+import {SetType} from './set-type.model';
 
 @model()
 export class Set extends Entity {
@@ -53,6 +53,11 @@ export class Set extends Entity {
     type: 'string',
   })
   extraNumbers?: string;
+
+  @property({
+    type: 'string',
+  })
+  extraNumbersTitle?: string;
 
   @belongsTo(() => SetType)
   setTypeId: number;

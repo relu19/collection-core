@@ -69,6 +69,49 @@ export class NumbersController {
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
+  @post('/remove-multiple-numbers')
+  @response(200, {
+    description: 'Remove multiple numbers',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async deleteMultipleNumbers(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              setId: {type: 'number'},
+              userId: {type: 'number'},
+              numbers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: {type: 'number'},
+                    number: {type: 'string'}
+                  }
+                }
+              }
+            },
+            required: ['setId', 'userId', 'numbers']
+          }
+        },
+      },
+    })
+    payload: {
+      setId: number;
+      userId: number;
+      numbers: {id: number; number: string}[];
+    },
+  ): Promise<(Numbers & NumbersRelations)[]> {
+    // Delete multiple numbers by their IDs
+    for (const num of payload.numbers) {
+      await this.numbersRepository.deleteById(num.id);
+    }
+    return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
+  }
+
   @post('/remove-number')
   @response(200, {
     description: 'Numbers model instance',
@@ -285,6 +328,73 @@ export class NumbersController {
     @requestBody() numbers: Numbers,
   ): Promise<void> {
     await this.numbersRepository.replaceById(id, numbers);
+  }
+
+  @post('/add-numbers-preserve-status')
+  @response(200, {
+    description: 'Add numbers while preserving existing status',
+    content: {'application/json': {schema: getModelSchemaRef(Numbers)}},
+  })
+  async addNumbersPreserveStatus(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              numbers: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    number: {type: 'string'},
+                    extra: {type: 'boolean'},
+                    desc: {type: 'string'}
+                  },
+                  required: ['number', 'extra']
+                }
+              },
+              setId: {type: 'number'},
+              userId: {type: 'number'}
+            },
+            required: ['numbers', 'setId', 'userId']
+          }
+        },
+      },
+    })
+    payload: {
+      numbers: {number: string; extra: boolean; desc?: string}[];
+      setId: number;
+      userId: number;
+    },
+  ): Promise<(Numbers & NumbersRelations)[]> {
+    // Find all existing numbers for this set/user
+    const existingNumbers = await this.numbersRepository.find({
+      where: {setId: payload.setId, userId: payload.userId}
+    });
+    // Always compare numbers as strings, skip if n.number is undefined
+    const existingNumbersMap = new Map(existingNumbers.filter(n => n.number !== undefined).map(n => [n.number!.toString(), n]));
+
+    for (const numObj of payload.numbers) {
+      const {number, extra, desc} = numObj;
+      const key = number.toString();
+      if (existingNumbersMap.has(key)) {
+        // Skip existing numbers - preserve their status
+        continue;
+      } else {
+        // Create new number with default type 0 (missing)
+        await this.numbersRepository.create({
+          number: key,
+          type: 0, // Default to missing
+          setId: payload.setId,
+          userId: payload.userId,
+          extra: extra,
+          desc: desc
+        });
+      }
+    }
+
+    return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
   @post('/remove-extra-numbers')
