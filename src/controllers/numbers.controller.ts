@@ -17,7 +17,7 @@ import {
   response,
 } from '@loopback/rest';
 import {Numbers, NumbersRelations} from '../models';
-import {NumbersRepository, SetRepository, SetUsersRepository, UsersRepository} from '../repositories';
+import {NumbersRepository, SetRepository, SetTypeRepository, SetUsersRepository, UsersRepository} from '../repositories';
 
 export class NumbersController {
   constructor(
@@ -25,6 +25,7 @@ export class NumbersController {
     @repository(UsersRepository) public usersRepository: UsersRepository,
     @repository(SetRepository) public setRepository: SetRepository,
     @repository(SetUsersRepository) public setUsersRepository: SetUsersRepository,
+    @repository(SetTypeRepository) public setTypeRepository: SetTypeRepository,
   ) {
   }
 
@@ -422,5 +423,236 @@ export class NumbersController {
     // Also clear extraNumbers field in the set
     await this.setRepository.updateById(payload.setId, {extraNumbers: ''});
     return {count: result.count};
+  }
+
+  @post('/global-exchanges')
+  @response(200, {
+    description: 'Get global exchanges for a user',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            exchanges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  userId: {type: 'number'},
+                  userName: {type: 'string'},
+                  userEmail: {type: 'string'},
+                  userLogo: {type: 'string'},
+                  exchanges: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        setId: {type: 'number'},
+                        setName: {type: 'string'},
+                        user1CanGive: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              number: {type: 'string'},
+                              extra: {type: 'boolean'},
+                              desc: {type: 'string'}
+                            }
+                          }
+                        },
+                        user2CanGive: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              number: {type: 'string'},
+                              extra: {type: 'boolean'},
+                              desc: {type: 'string'}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  async getGlobalExchanges(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              userId: {type: 'number'},
+            },
+            required: ['userId'],
+          },
+        },
+      },
+    })
+    payload: {userId: number},
+  ): Promise<{
+    exchanges: Array<{
+      userId: number;
+      userName: string;
+      userEmail: string;
+      userLogo: string;
+      exchanges: Array<{
+        setId: number;
+        setName: string;
+        user1CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+        user2CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+      }>;
+    }>;
+  }> {
+    try {
+      // Get all users
+      const allUsers = await this.usersRepository.find();
+
+      // Get all sets
+      const allSets = await this.setRepository.find();
+
+      // Get all set types
+      const allSetTypes = await this.setTypeRepository.find();
+
+      // Get all set-user relationships
+      const allSetUsers = await this.setUsersRepository.find();
+
+      // Get all numbers for all users and sets
+      const allNumbers = await this.numbersRepository.find();
+
+      // Group numbers by user and set
+      const numbersByUserAndSet = new Map<string, Numbers[]>();
+      allNumbers.forEach(num => {
+        const key = `${num.userId}-${num.setId}`;
+        if (!numbersByUserAndSet.has(key)) {
+          numbersByUserAndSet.set(key, []);
+        }
+        numbersByUserAndSet.get(key)!.push(num);
+      });
+
+      // Find users who have sets in common with the current user
+      const currentUserSets = allSetUsers.filter(su => su.usersId === payload.userId);
+      const currentUserSetIds = currentUserSets.map(su => su.setId);
+
+      const exchanges: Array<{
+        userId: number;
+        userName: string;
+        userEmail: string;
+        userLogo: string;
+        exchanges: Array<{
+          setId: number;
+          setName: string;
+          user1CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+          user2CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+        }>;
+      }> = [];
+
+      // Check each user for potential exchanges
+      for (const user of allUsers) {
+        if (user.id === payload.userId) continue; // Skip current user
+
+        const userSets = allSetUsers.filter(su => su.usersId === user.id);
+        const userSetIds = userSets.map(su => su.setId);
+
+        // Find common sets between current user and this user
+        const commonSetIds = currentUserSetIds.filter(setId => userSetIds.includes(setId));
+
+        if (commonSetIds.length === 0) continue; // No common sets
+
+        const userExchanges: Array<{
+          setId: number;
+          setName: string;
+          user1CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+          user2CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+        }> = [];
+
+        // Check each common set for exchanges
+        for (const setId of commonSetIds) {
+          const currentUserNumbers = numbersByUserAndSet.get(`${payload.userId}-${setId}`) || [];
+          const otherUserNumbers = numbersByUserAndSet.get(`${user.id}-${setId}`) || [];
+
+          if (currentUserNumbers.length === 0 || otherUserNumbers.length === 0) continue;
+
+          // Apply exchange logic
+          // Type 0 OR Type 3 = "I need this number" (both are needed)
+          // Type 2 = "I have this for exchange" (only type 2 is exchangeable)
+          const currentUserExchange = currentUserNumbers.filter(n => n.type === 2);
+          const currentUserNeed = currentUserNumbers.filter(n => n.type === 0 || n.type === 3);
+          const otherUserExchange = otherUserNumbers.filter(n => n.type === 2);
+          const otherUserNeed = otherUserNumbers.filter(n => n.type === 0 || n.type === 3);
+
+          // Find matches
+          const currentUserCanGive = currentUserExchange.filter(num =>
+            otherUserNeed.some(n => n.number === num.number)
+          );
+          const otherUserCanGive = otherUserExchange.filter(num =>
+            currentUserNeed.some(n => n.number === num.number)
+          );
+
+          if (currentUserCanGive.length > 0 || otherUserCanGive.length > 0) {
+            const set = allSets.find(s => s.id === setId);
+            userExchanges.push({
+              setId: setId,
+              setName: set?.name || '',
+              user1CanGive: currentUserCanGive.map(n => ({
+                number: n.number || '',
+                extra: n.extra || false,
+                desc: n.desc || ''
+              })),
+              user2CanGive: otherUserCanGive.map(n => ({
+                number: n.number || '',
+                extra: n.extra || false,
+                desc: n.desc || ''
+              }))
+            });
+          }
+        }
+
+        if (userExchanges.length > 0) {
+          // Remove duplicates based on setId
+          const uniqueExchanges = userExchanges.filter((exchange, index, self) =>
+            index === self.findIndex(e => e.setId === exchange.setId)
+          );
+
+          // Sort exchanges by setType order first, then by set order
+          const sortedExchanges = uniqueExchanges.sort((a, b) => {
+            const setA = allSets.find(s => s.id === a.setId);
+            const setB = allSets.find(s => s.id === b.setId);
+
+            const setTypeA = allSetTypes.find(st => st.id === setA?.setTypeId);
+            const setTypeB = allSetTypes.find(st => st.id === setB?.setTypeId);
+
+            // First sort by setType order
+            const setTypeOrderDiff = (setTypeA?.order || 0) - (setTypeB?.order || 0);
+            if (setTypeOrderDiff !== 0) {
+              return setTypeOrderDiff;
+            }
+
+            // If same setType, sort by set order
+            return (setA?.order || 0) - (setB?.order || 0);
+          });
+
+          exchanges.push({
+            userId: user.id || 0,
+            userName: user.name || '',
+            userEmail: user.email || '',
+            userLogo: user.logo || '',
+            exchanges: sortedExchanges
+          });
+        }
+      }
+
+      return {exchanges};
+    } catch (error) {
+      console.error('Error getting global exchanges:', error);
+      return {exchanges: []};
+    }
   }
 }
