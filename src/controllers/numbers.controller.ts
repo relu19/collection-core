@@ -588,13 +588,17 @@ export class NumbersController {
           const otherUserExchange = otherUserNumbers.filter(n => n.type === 2);
           const otherUserNeed = otherUserNumbers.filter(n => n.type === 0 || n.type === 3);
 
-          // Find matches
+          // Find matches - must match both number AND extra flag (handle null/undefined extra values)
           const currentUserCanGive = currentUserExchange.filter(num =>
-            otherUserNeed.some(n => n.number === num.number)
+            otherUserNeed.some(n => n.number === num.number &&
+              ((num.extra === true && n.extra === true) || (num.extra !== true && n.extra !== true)))
           );
           const otherUserCanGive = otherUserExchange.filter(num =>
-            currentUserNeed.some(n => n.number === num.number)
+            currentUserNeed.some(n => n.number === num.number &&
+              ((num.extra === true && n.extra === true) || (num.extra !== true && n.extra !== true)))
           );
+
+
 
           if (currentUserCanGive.length > 0 || otherUserCanGive.length > 0) {
             const set = allSets.find(s => s.id === setId);
@@ -652,6 +656,214 @@ export class NumbersController {
       return {exchanges};
     } catch (error) {
       console.error('Error getting global exchanges:', error);
+      return {exchanges: []};
+    }
+  }
+
+  @post('/set-exchanges')
+  @response(200, {
+    description: 'Get exchanges for a specific set between users',
+    content: {
+      'application/json': {
+        schema: {
+          type: 'object',
+          properties: {
+            exchanges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  userId: {type: 'number'},
+                  userName: {type: 'string'},
+                  userEmail: {type: 'string'},
+                  userLogo: {type: 'string'},
+                  exchanges: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        setId: {type: 'number'},
+                        setName: {type: 'string'},
+                        user1CanGive: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              number: {type: 'string'},
+                              extra: {type: 'boolean'},
+                              desc: {type: 'string'}
+                            }
+                          }
+                        },
+                        user2CanGive: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              number: {type: 'string'},
+                              extra: {type: 'boolean'},
+                              desc: {type: 'string'}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  async getSetExchanges(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: {
+            type: 'object',
+            properties: {
+              setId: {type: 'number'},
+              userId: {type: 'number'},
+            },
+            required: ['setId', 'userId'],
+          },
+        },
+      },
+    })
+    payload: {setId: number; userId: number},
+  ): Promise<{
+    exchanges: Array<{
+      userId: number;
+      userName: string;
+      userEmail: string;
+      userLogo: string;
+      exchanges: Array<{
+        setId: number;
+        setName: string;
+        user1CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+        user2CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+      }>;
+    }>;
+  }> {
+    try {
+      // Get the specific set
+      const set = await this.setRepository.findById(payload.setId);
+      if (!set) {
+        return {exchanges: []};
+      }
+
+      // Get all users who have this set in their collection
+      const setUsers = await this.setUsersRepository.find({
+        where: {
+          setId: payload.setId,
+          categoryId: set.categoryId,
+          setTypeId: set.setTypeId,
+        }
+      });
+
+      if (setUsers.length === 0) {
+        return {exchanges: []};
+      }
+
+      // Get user details for users who have the set
+      const userIdsWithSet = setUsers.map(su => su.usersId).filter((id): id is number => id !== undefined);
+      const usersWithSet = await this.usersRepository.find({
+        where: {
+          id: {inq: userIdsWithSet}
+        }
+      });
+
+      // Filter out current user
+      const otherUsers = usersWithSet.filter(user => user.id !== payload.userId);
+
+      // Get all numbers for this set
+      const otherUserIds = otherUsers.map(u => u.id).filter((id): id is number => id !== undefined);
+      const allNumbersForSet = await this.numbersRepository.find({
+        where: {
+          setId: payload.setId,
+          userId: {inq: [payload.userId, ...otherUserIds]}
+        }
+      });
+
+      // Group numbers by user
+      const numbersByUser = new Map<number, Numbers[]>();
+      allNumbersForSet.forEach(num => {
+        if (!numbersByUser.has(num.userId)) {
+          numbersByUser.set(num.userId, []);
+        }
+        numbersByUser.get(num.userId)!.push(num);
+      });
+
+      const exchanges: Array<{
+        userId: number;
+        userName: string;
+        userEmail: string;
+        userLogo: string;
+        exchanges: Array<{
+          setId: number;
+          setName: string;
+          user1CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+          user2CanGive: Array<{number: string; extra: boolean; desc?: string}>;
+        }>;
+      }> = [];
+
+      // Check each user for potential exchanges
+      for (const user of otherUsers) {
+        if (!user.id) continue; // Skip users without valid ID
+        const currentUserNumbers = numbersByUser.get(payload.userId) || [];
+        const otherUserNumbers = numbersByUser.get(user.id) || [];
+
+        if (currentUserNumbers.length === 0 || otherUserNumbers.length === 0) continue;
+
+        // Apply exchange logic
+        // Type 0 OR Type 3 = "I need this number" (both are needed)
+        // Type 2 = "I have this for exchange" (only type 2 is exchangeable)
+        const currentUserExchange = currentUserNumbers.filter(n => n.type === 2);
+        const currentUserNeed = currentUserNumbers.filter(n => n.type === 0 || n.type === 3);
+        const otherUserExchange = otherUserNumbers.filter(n => n.type === 2);
+        const otherUserNeed = otherUserNumbers.filter(n => n.type === 0 || n.type === 3);
+
+        // Find matches - must match both number AND extra flag (handle null/undefined extra values)
+        const currentUserCanGive = currentUserExchange.filter(num =>
+          otherUserNeed.some(n => n.number === num.number &&
+            ((num.extra === true && n.extra === true) || (num.extra !== true && n.extra !== true)))
+        );
+        const otherUserCanGive = otherUserExchange.filter(num =>
+          currentUserNeed.some(n => n.number === num.number &&
+            ((num.extra === true && n.extra === true) || (num.extra !== true && n.extra !== true)))
+        );
+
+
+
+        if (currentUserCanGive.length > 0 || otherUserCanGive.length > 0) {
+          exchanges.push({
+            userId: user.id ?? 0,
+            userName: user.name || '',
+            userEmail: user.email || '',
+            userLogo: user.logo || '',
+            exchanges: [{
+              setId: payload.setId,
+              setName: set.name || '',
+              user1CanGive: currentUserCanGive.map(n => ({
+                number: n.number || '',
+                extra: n.extra || false,
+                desc: n.desc || ''
+              })),
+              user2CanGive: otherUserCanGive.map(n => ({
+                number: n.number || '',
+                extra: n.extra || false,
+                desc: n.desc || ''
+              }))
+            }]
+          });
+        }
+      }
+
+      return {exchanges};
+    } catch (error) {
+      console.error('Error getting set exchanges:', error);
       return {exchanges: []};
     }
   }
