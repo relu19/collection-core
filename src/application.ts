@@ -7,8 +7,11 @@ import {
 import {RepositoryMixin, SchemaMigrationOptions} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {ServiceMixin} from '@loopback/service-proxy';
+import {AuthenticationComponent, registerAuthenticationStrategy} from '@loopback/authentication';
 import path from 'path';
 import {MySequence} from './sequence';
+import {JWTAuthenticationStrategy} from './authentication-strategies';
+import {JWTService} from './services';
 
 export {ApplicationConfig};
 
@@ -29,6 +32,23 @@ export class CollectionCoreApplication extends BootMixin(
       path: '/explorer',
     });
     this.component(RestExplorerComponent);
+
+    // Authentication component
+    this.component(AuthenticationComponent);
+
+    // JWT secret - in production, use environment variable
+    this.bind('authentication.jwt.secret').to(
+      process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    );
+    this.bind('authentication.jwt.expiresIn').to(
+      process.env.JWT_EXPIRES_IN || '7d',
+    );
+
+    // Bind JWT service
+    this.bind('services.JWTService').toClass(JWTService);
+
+    // Register authentication strategies
+    registerAuthenticationStrategy(this as any, JWTAuthenticationStrategy);
 
     this.projectRoot = __dirname;
     // Customize @loopback/boot Booter Conventions here

@@ -1,4 +1,5 @@
 export * from './ping.controller';
+export * from './auth.controller';
 export * from './set.controller';
 export * from './numbers.controller';
 export * from './numbers-set.controller';

@@ -16,7 +16,11 @@ import {
   del,
   requestBody,
   response,
+  HttpErrors,
 } from '@loopback/rest';
+import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
+import {SecurityBindings, UserProfile, securityId} from '@loopback/security';
 import {Users} from '../models';
 import {NumbersRepository, UsersRepository} from '../repositories';
 
@@ -25,9 +29,12 @@ export class UsersController {
   constructor(
     @repository(NumbersRepository) public numbersRepository: NumbersRepository,
     @repository(UsersRepository) public usersRepository: UsersRepository,
+    @inject(SecurityBindings.USER, {optional: true})
+    public currentUserProfile: UserProfile,
     ) {
   }
 
+  @authenticate('jwt')
   @post('/remove-users')
   @response(200, {
     description: 'Users model instance',
@@ -45,24 +52,36 @@ export class UsersController {
       },
     })
       users: Omit<Users, 'id'>,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<Users> {
     const existingUser = await this.usersRepository.findOne({
       where: {email: users.email},
     });
-    if (existingUser) {
-      await this.numbersRepository.deleteAll({
-        userId: existingUser.id,
-      });
+
+    if (!existingUser) {
+      throw new HttpErrors.NotFound('User not found');
     }
+
+    // Users can only delete their own account
+    if (existingUser.id?.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only delete your own account');
+    }
+
+    await this.numbersRepository.deleteAll({
+      userId: existingUser.id,
+    });
+
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     return this.usersRepository.deleteById(existingUser.id);
   }
 
 
+  @authenticate('jwt')
   @post('/users')
   @response(200, {
-    description: 'Users model instance',
+    description: 'Users model instance - Update current user profile',
     content: {'application/json': {schema: getModelSchemaRef(Users)}},
   })
   async create(
@@ -77,16 +96,25 @@ export class UsersController {
       },
     })
       users: Omit<Users, 'id'>,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<Users> {
-    const existingUser = await this.usersRepository.findOne({
-      where: {email: users.email},
-    });
+    // Users can only update their own profile
+    const userId = parseInt(currentUserProfile.id);
+    const existingUser = await this.usersRepository.findById(userId);
+
     if (!existingUser) {
-      return this.usersRepository.create({...users});
+      throw new HttpErrors.NotFound('User not found');
     }
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    return this.usersRepository.updateById(existingUser.id, {name: users.name, email: users.email, phone: users.phone, logo: users.logo});
+
+    // Update only allowed fields
+    await this.usersRepository.updateById(userId, {
+      name: users.name,
+      phone: users.phone,
+      logo: users.logo,
+    });
+
+    return this.usersRepository.findById(userId);
   }
 
   @get('/users/count')
@@ -118,6 +146,7 @@ export class UsersController {
     return this.usersRepository.find(filter);
   }
 
+  @authenticate('jwt')
   @patch('/users')
   @response(200, {
     description: 'Users PATCH success count',
@@ -133,8 +162,12 @@ export class UsersController {
     })
       users: Users,
     @param.where(Users) where?: Where<Users>,
+    @inject(SecurityBindings.USER, {optional: true})
+    currentUserProfile?: UserProfile,
   ): Promise<Count> {
-    return this.usersRepository.updateAll(users, where);
+    // Only allow updating own user
+    const userId = parseInt(currentUserProfile!.id);
+    return this.usersRepository.updateAll(users, {id: userId});
   }
 
   @get('/users/{id}')
@@ -153,6 +186,7 @@ export class UsersController {
     return this.usersRepository.findById(id, filter);
   }
 
+  @authenticate('jwt')
   @patch('/users/{id}')
   @response(204, {
     description: 'Users PATCH success',
@@ -167,10 +201,17 @@ export class UsersController {
       },
     })
       users: Users,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<void> {
+    // Users can only update their own profile
+    if (id.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only update your own profile');
+    }
     await this.usersRepository.updateById(id, users);
   }
 
+  @authenticate('jwt')
   @put('/users/{id}')
   @response(204, {
     description: 'Users PUT success',
@@ -178,15 +219,30 @@ export class UsersController {
   async replaceById(
     @param.path.number('id') id: number,
     @requestBody() users: Users,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<void> {
+    // Users can only replace their own profile
+    if (id.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only update your own profile');
+    }
     await this.usersRepository.replaceById(id, users);
   }
 
+  @authenticate('jwt')
   @del('/users/{id}')
   @response(204, {
     description: 'Users DELETE success',
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(
+    @param.path.number('id') id: number,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
+  ): Promise<void> {
+    // Users can only delete their own account
+    if (id.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only delete your own account');
+    }
     await this.usersRepository.deleteById(id);
   }
 }

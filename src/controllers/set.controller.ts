@@ -1,7 +1,10 @@
+import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
 import {Count, CountSchema, Filter, FilterExcludingWhere, repository, Where} from '@loopback/repository';
 import {del, get, getModelSchemaRef, HttpErrors, param, patch, post, put, requestBody, response} from '@loopback/rest';
+import {SecurityBindings, UserProfile} from '@loopback/security';
 import {Set, SetRelations} from '../models';
-import { SetRepository} from '../repositories';
+import {SetRepository} from '../repositories';
 
 export class SetController {
   constructor(
@@ -9,6 +12,7 @@ export class SetController {
   ) {
   }
 
+  @authenticate('jwt')
   @post('/sets')
   @response(200, {
     description: 'Set model instance',
@@ -26,9 +30,12 @@ export class SetController {
       },
     })
     set: Set,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<{
     setData: object
   }> {
+    // Note: Sets are created globally but users add them to their collection via SetUsers
     const createdSet = await this.setRepository.create(set);
     try {
       return {
@@ -68,6 +75,7 @@ export class SetController {
     return this.setRepository.find(filter);
   }
 
+  @authenticate('jwt')
   @patch('/sets')
   @response(200, {
     description: 'Set PATCH success count',
@@ -83,7 +91,10 @@ export class SetController {
     })
     set: Set,
     @param.where(Set) where?: Where<Set>,
+    @inject(SecurityBindings.USER, {optional: true})
+    currentUserProfile?: UserProfile,
   ): Promise<Count> {
+    // Sets are global, authenticated users can update them
     return this.setRepository.updateAll(set, where);
   }
 
@@ -103,6 +114,7 @@ export class SetController {
     return this.setRepository.findById(id, filter);
   }
 
+  @authenticate('jwt')
   @patch('/sets/{id}')
   @response(204, {
     description: 'Set PATCH success',
@@ -117,11 +129,14 @@ export class SetController {
       },
     })
     set: Set,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<Set & SetRelations> {
     await this.setRepository.updateById(id, set);
     return this.setRepository.findById(id);
   }
 
+  @authenticate('jwt')
   @put('/sets/{id}')
   @response(204, {
     description: 'Set PUT success',
@@ -129,15 +144,22 @@ export class SetController {
   async replaceById(
     @param.path.number('id') id: number,
     @requestBody() set: Set,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<void> {
     await this.setRepository.replaceById(id, set);
   }
 
+  @authenticate('jwt')
   @del('/sets/{id}')
   @response(204, {
     description: 'Set DELETE success',
   })
-  async deleteById(@param.path.number('id') id: number): Promise<void> {
+  async deleteById(
+    @param.path.number('id') id: number,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
+  ): Promise<void> {
     await this.setRepository.deleteById(id);
   }
 }

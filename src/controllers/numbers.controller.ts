@@ -15,7 +15,11 @@ import {
   put,
   requestBody,
   response,
+  HttpErrors,
 } from '@loopback/rest';
+import {authenticate} from '@loopback/authentication';
+import {inject} from '@loopback/core';
+import {SecurityBindings, UserProfile} from '@loopback/security';
 import {Numbers, NumbersRelations} from '../models';
 import {NumbersRepository, SetRepository, SetTypeRepository, SetUsersRepository, UsersRepository} from '../repositories';
 
@@ -29,6 +33,7 @@ export class NumbersController {
   ) {
   }
 
+  @authenticate('jwt')
   @post('/number')
   @response(200, {
     description: 'Numbers model instance',
@@ -46,11 +51,18 @@ export class NumbersController {
       },
     })
     numbers: Omit<Numbers, 'id'>,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only modify their own numbers
+    if (numbers.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.create(numbers);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
+  @authenticate('jwt')
   @patch('/number/{id}')
   @response(204, {
     description: 'Numbers PATCH success',
@@ -65,11 +77,19 @@ export class NumbersController {
       },
     })
     numbers: Numbers,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Verify ownership
+    const existing = await this.numbersRepository.findById(id);
+    if (existing.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.updateById(id, numbers);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-multiple-numbers')
   @response(200, {
     description: 'Remove multiple numbers',
@@ -105,7 +125,13 @@ export class NumbersController {
       userId: number;
       numbers: {id: number; number: string}[];
     },
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only delete their own numbers
+    if (payload.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     // Delete multiple numbers by their IDs
     for (const num of payload.numbers) {
       await this.numbersRepository.deleteById(num.id);
@@ -113,6 +139,7 @@ export class NumbersController {
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-number')
   @response(200, {
     description: 'Numbers model instance',
@@ -129,11 +156,18 @@ export class NumbersController {
       },
     })
     numbers: Numbers,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Verify ownership
+    if (numbers.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.deleteById(numbers.id);
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-set-from-collection')
   @response(200, {
     description: 'Numbers model instance',
@@ -151,11 +185,18 @@ export class NumbersController {
       },
     })
     numbers: Omit<Numbers, 'id'>,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<Count> {
+    // Users can only remove sets from their own collection
+    if (numbers.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.setUsersRepository.deleteAll({setId: numbers.setId, usersId: numbers.userId});
     return this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
   }
 
+  @authenticate('jwt')
   @post('/add-all-numbers')
   @response(200, {
     description: 'Numbers model instance',
@@ -195,7 +236,13 @@ export class NumbersController {
       setId: number;
       userId: number;
     },
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only add numbers to their own collection
+    if (payload.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     // Find all existing numbers for this set/user
     const existingNumbers = await this.numbersRepository.find({
       where: {setId: payload.setId, userId: payload.userId}
@@ -228,6 +275,7 @@ export class NumbersController {
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-all-numbers')
   @response(200, {
     description: 'Numbers model instance',
@@ -245,11 +293,18 @@ export class NumbersController {
       },
     })
     numbers: Omit<Numbers, 'id'>,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only delete their own numbers
+    if (numbers.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.deleteAll({setId: numbers.setId, userId: numbers.userId});
     return this.numbersRepository.find({where: {userId: numbers.userId, setId: numbers.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-set')
   @response(200, {
     description: 'Set model instance',
@@ -267,7 +322,13 @@ export class NumbersController {
       },
     })
     numbers: any,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only delete sets from their own collection
+    if (numbers.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.deleteAll({setId: numbers.id});
     await this.setUsersRepository.deleteAll({setId: numbers.id, usersId: numbers.userId});
     await this.setRepository.deleteAll({id: numbers.id});
@@ -320,6 +381,7 @@ export class NumbersController {
   }
 
 
+  @authenticate('jwt')
   @put('/numbers/{id}')
   @response(204, {
     description: 'Numbers PUT success',
@@ -327,10 +389,18 @@ export class NumbersController {
   async replaceById(
     @param.path.number('id') id: number,
     @requestBody() numbers: Numbers,
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<void> {
+    // Verify ownership
+    const existing = await this.numbersRepository.findById(id);
+    if (existing.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     await this.numbersRepository.replaceById(id, numbers);
   }
 
+  @authenticate('jwt')
   @post('/add-numbers-preserve-status')
   @response(200, {
     description: 'Add numbers while preserving existing status',
@@ -368,7 +438,13 @@ export class NumbersController {
       setId: number;
       userId: number;
     },
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<(Numbers & NumbersRelations)[]> {
+    // Users can only add numbers to their own collection
+    if (payload.userId.toString() !== currentUserProfile.id) {
+      throw new HttpErrors.Forbidden('You can only modify your own collection');
+    }
     // Find all existing numbers for this set/user
     const existingNumbers = await this.numbersRepository.find({
       where: {setId: payload.setId, userId: payload.userId}
@@ -398,6 +474,7 @@ export class NumbersController {
     return this.numbersRepository.find({where: {userId: payload.userId, setId: payload.setId}});
   }
 
+  @authenticate('jwt')
   @post('/remove-extra-numbers')
   @response(200, {
     description: 'Remove all extra numbers for a set',
@@ -418,7 +495,10 @@ export class NumbersController {
       },
     })
     payload: {setId: number},
+    @inject(SecurityBindings.USER)
+    currentUserProfile: UserProfile,
   ): Promise<{count: number}> {
+    // Users need to be authenticated to remove extra numbers
     const result = await this.numbersRepository.deleteAll({setId: payload.setId, extra: true});
     // Also clear extraNumbers field in the set
     await this.setRepository.updateById(payload.setId, {extraNumbers: ''});
