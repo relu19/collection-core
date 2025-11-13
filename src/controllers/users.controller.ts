@@ -112,6 +112,8 @@ export class UsersController {
       name: users.name,
       phone: users.phone,
       logo: users.logo,
+      username: users.username,
+      contactEmail: users.contactEmail,
     });
 
     return this.usersRepository.findById(userId);

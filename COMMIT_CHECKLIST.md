@@ -100,3 +100,4 @@ REACT_APP_GOOGLE_CLIENT_ID=<your-google-client-id>
 
 You can safely commit all staged changes. The `.env` files are properly gitignored.
 
+

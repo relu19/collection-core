@@ -31,7 +31,7 @@ export class Users extends Entity {
     type: 'string',
     default: '', // default value to avoid undefined if no value is provided
   })
-  fbId?: string;
+  username?: string;
 
   @property({
     type: 'string',
@@ -49,7 +49,7 @@ export class Users extends Entity {
     type: 'string',
     required: false,
   })
-  publicId: string;
+  contactEmail: string;
 
   constructor(data?: Partial<Users>) {
     super(data);

@@ -72,10 +72,10 @@ export class AuthController {
         email: payload.email,
         name: payload.name || payload.email,
         logo: payload.picture || '',
-        fbId: payload.sub || '',
+        username: payload.sub || '',
         phone: '',
         type: 1, // Regular user type
-        publicId: this.generatePublicId(),
+        contactEmail: this.generateContactEmail(),
       });
     } else {
       // Update user info if changed
@@ -102,7 +102,7 @@ export class AuthController {
     };
   }
 
-  private generatePublicId(): string {
+  private generateContactEmail(): string {
     return Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15);
   }
