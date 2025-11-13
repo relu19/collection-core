@@ -72,10 +72,10 @@ export class AuthController {
         email: payload.email,
         name: payload.name || payload.email,
         logo: payload.picture || '',
-        username: payload.sub || '',
+        username: '',
         phone: '',
         type: 1, // Regular user type
-        contactEmail: this.generateContactEmail(),
+        contactEmail: '',
       });
     } else {
       // Update user info if changed
@@ -102,9 +102,5 @@ export class AuthController {
     };
   }
 
-  private generateContactEmail(): string {
-    return Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
-  }
 }
 

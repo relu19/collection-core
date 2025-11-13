@@ -63,9 +63,20 @@ export class UsersController {
       throw new HttpErrors.NotFound('User not found');
     }
 
-    // Users can only delete their own account
-    if (existingUser.id?.toString() !== currentUserProfile.id) {
-      throw new HttpErrors.Forbidden('You can only delete your own account');
+    // Get current user's full record to check admin status
+    const currentUserId = parseInt(currentUserProfile.id);
+    const currentUser = await this.usersRepository.findById(currentUserId);
+
+    if (!currentUser) {
+      throw new HttpErrors.NotFound('Current user not found');
+    }
+
+    // Only admins (type 114) can delete users
+    const ADMIN_TYPE = 114;
+    const isAdmin = currentUser.type === ADMIN_TYPE;
+
+    if (!isAdmin) {
+      throw new HttpErrors.Forbidden('Only administrators can delete users');
     }
 
     await this.numbersRepository.deleteAll({
