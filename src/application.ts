@@ -12,7 +12,7 @@ import path from 'path';
 import {MySequence} from './sequence';
 import {JWTAuthenticationStrategy} from './authentication-strategies';
 import {JWTService} from './services';
-
+import cors from 'cors';
 export {ApplicationConfig};
 
 export class CollectionCoreApplication extends BootMixin(
@@ -21,6 +21,20 @@ export class CollectionCoreApplication extends BootMixin(
   constructor(options: ApplicationConfig = {}) {
     super(options);
 
+// Enable CORS manually because MiddlewareSequence disables default one
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? "").split(",");
+
+    this.expressMiddleware(
+      'middleware.cors',
+      cors({
+        origin: (origin, callback) => {
+          if (!origin) return callback(null, true);
+          if (allowedOrigins.includes(origin)) return callback(null, true);
+          return callback(new Error('Blocked by CORS: ' + origin));
+        },
+        credentials: true,
+      }),
+    );
     // Set up the custom sequence
     this.sequence(MySequence);
 
