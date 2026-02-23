@@ -8,7 +8,9 @@ export * from './application';
 export async function main(options: ApplicationConfig = {}) {
   const app = new CollectionCoreApplication(options);
   await app.boot();
-  await app.migrateSchema();
+  if (process.env.NODE_ENV !== 'production') {
+    await app.migrateSchema();
+  }
   await app.start();
 
   const url = app.restServer.url;
