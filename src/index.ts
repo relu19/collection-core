@@ -24,14 +24,21 @@ if (require.main === module) {
     rest: {
       port: +(process.env.PORT ?? 3000),
       host: process.env.HOST,
-      // The `gracePeriodForClose` provides a graceful close for http/https
-      // servers with keep-alive clients. The default value is `Infinity`
-      // (don't force-close). If you want to immediately destroy all sockets
-      // upon stop, set its value to `0`.
-      // See https://www.npmjs.com/package/stoppable
-      gracePeriodForClose: 5000, // 5 seconds
+
+      cors: {
+        origin: (origin: string, callback: Function) => {
+          const allowedOrigins = (process.env.ALLOWED_ORIGINS || "").split(",");
+
+          if (!origin) return callback(null, true);
+          if (allowedOrigins.includes(origin)) return callback(null, true);
+
+          return callback(new Error("Not allowed by CORS: " + origin));
+        },
+        credentials: true,
+      },
+
+      gracePeriodForClose: 5000,
       openApiSpec: {
-        // useful when used with OpenAPI-to-GraphQL to locate your application
         setServersFromRequest: true,
       },
     },
