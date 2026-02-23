@@ -29,8 +29,20 @@ export class CollectionCoreApplication extends BootMixin(
       cors({
         origin: (origin, callback) => {
           if (!origin) return callback(null, true);
-          if (allowedOrigins.includes(origin)) return callback(null, true);
-          return callback(new Error('Blocked by CORS: ' + origin));
+
+          // localhost
+          if (origin.startsWith("http://localhost"))
+            return callback(null, true);
+
+          // production domain
+          if (origin === "https://collectors-hub.art" || origin === "https://www.collectors-hub.art")
+            return callback(null, true);
+
+          // any vercel preview or prod deployment
+          if (origin.endsWith(".vercel.app"))
+            return callback(null, true);
+
+          return callback(null, false);
         },
         credentials: true,
       }),
